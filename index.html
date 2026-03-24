@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Python Space Commander</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/brython@3.10.5/brython.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/brython@3.10.5/brython_stdlib.js"></script>
+    
+    <style>
+        body { font-family: 'Courier New', Courier, monospace; background: #0b0d17; color: #cfd8dc; display: flex; flex-direction: column; height: 100vh; margin: 0; }
+        header { background: #1a237e; color: #fff; padding: 15px; border-bottom: 2px solid #3949ab; display: flex; justify-content: space-between; }
+        .container { display: flex; flex: 1; overflow: hidden; }
+        .editor-side, .output-side { flex: 1; display: flex; flex-direction: column; padding: 20px; }
+        textarea { flex: 1; font-family: 'Consolas', monospace; font-size: 16px; padding: 15px; border: 2px solid #3949ab; border-radius: 4px; background: #1c1c1c; color: #00ff41; resize: none; }
+        #console { flex: 1; background: #000; color: #00ff41; font-family: 'Consolas', monospace; padding: 15px; overflow-y: auto; border: 1px solid #333; white-space: pre-wrap; }
+        .controls { display: flex; gap: 10px; margin-top: 10px; }
+        button { flex: 1; padding: 15px; font-size: 16px; cursor: pointer; border: none; color: white; font-weight: bold; }
+        #runBtn { background: #1b5e20; }
+        #nextBtn { background: #0277bd; display: none; }
+        .level-hint { background: #263238; padding: 15px; border-left: 5px solid #0277bd; margin-bottom: 15px; color: #eceff1; }
+        code { background: #37474f; padding: 2px 5px; color: #ffab40; }
+    </style>
+</head>
+
+<body onload="brython()">
+
+<header>
+    <h1 id="levelTitle">Mission Control: Level 1</h1>
+    <div id="progress">Python Level 1 of 25</div>
+</header>
+
+<div class="container">
+    <div class="editor-side">
+        <div class="level-hint">
+            <strong id="taskTitle">Current Task:</strong>
+            <p id="instructions">Create a variable <code>ship_name</code> and set it to <code>"Apollo"</code>.</p>
+        </div>
+        <textarea id="codeEditor" spellcheck="false" placeholder="# Write your Python code here..."></textarea>
+        <div class="controls">
+            <button id="runBtn" onclick="runPython()">Initiate Launch (Run)</button>
+            <button id="nextBtn" onclick="nextLevel()">Next Level →</button>
+        </div>
+    </div>
+
+    <div class="output-side">
+        <h3>Terminal Output:</h3>
+        <div id="console">System Ready...</div>
+    </div>
+</div>
+
+<script type="text/python" id="python_runner">
+from browser import document, window, alert
+import sys
+
+def run_it(ev):
+    document["console"].text = ""
+    code = document["codeEditor"].value
+    
+    # Redirect Python print() to our console div
+    class MyOutput:
+        def write(self, data):
+            document["console"].text += data
+    
+    sys.stdout = MyOutput()
+    
+    try:
+        exec(code)
+        window.check_progress(code)
+    except Exception as e:
+        print(f"PYTHON ERROR: {e}")
+
+document["runBtn"].bind("click", run_it)
+</script>
+
+<script>
+    let currentLevel = 1;
+    const levels = [
+        { task: "Set the ship name: <code>ship_name = \"Apollo\"</code>", check: "ship_name" },
+        { task: "Set the destination: <code>destination = \"Mars\"</code>", check: "destination" },
+        { task: "Print the ship name: <code>print(ship_name)</code>", check: "print" },
+        { task: "Print the destination: <code>print(destination)</code>", check: "print" },
+        { task: "Set fuel level to 100: <code>fuel = 100</code>", check: "fuel" },
+        { task: "Set crew count to 3: <code>crew = 3</code>", check: "crew" },
+        { task: "Set distance to 0: <code>distance = 0</code>", check: "distance" },
+        { task: "Print: <code>print(\"Engines Warming Up...\")</code>", check: "Warming" },
+        { task: "Update distance: <code>distance = distance + 500</code>", check: "+ 500" },
+        { task: "Decrease fuel: <code>fuel = fuel - 10</code>", check: "- 10" },
+        { task: "Print new distance: <code>print(distance)</code>", check: "distance" },
+        { task: "Print new fuel: <code>print(fuel)</code>", check: "fuel" },
+        { task: "Create an IF: <code>if fuel > 50:</code>", check: ":" },
+        { task: "Inside the IF, indent 4 spaces and print: <code>print(\"Fuel levels good!\")</code>", check: "good" },
+        { task: "Add an ELSE (un-indented): <code>else:</code>", check: "else:" },
+        { task: "Inside ELSE, print: <code>print(\"Low fuel warning!\")</code>", check: "warning" },
+        { task: "Create a list of cargo: <code>food_types = [\"Apples\", \"Steak\"]</code>", check: "[" },
+        { task: "Add to the list: <code>food_types.append(\"Water\")</code>", check: "append" },
+        { task: "Print the list: <code>print(food_types)</code>", check: "food_types" },
+        { task: "Check crew size: <code>if crew == 3:</code>", check: "==" },
+        { task: "Inside, print: <code>print(\"All crew present.\")</code>", check: "present" },
+        { task: "Create a boolean: <code>in_orbit = True</code>", check: "True" },
+        { task: "If in_orbit is True, print: <code>print(\"Orbit achieved!\")</code>", check: "Orbit" },
+        { task: "Update ship name to include your name: <code>ship_name = \"USS [YourName]\"</code>", check: "USS" },
+        { task: "Final Print: <code>print(\"Mission Accomplished!\")</code>", check: "Accomplished" }
+    ];
+
+    window.check_progress = function(code) {
+        let requirement = levels[currentLevel-1].check;
+        if (code.includes(requirement)) {
+            document.getElementById('console').innerHTML += "\n✅ [MISSION CLEAR] Requirement Met.";
+            document.getElementById('nextBtn').style.display = "block";
+        }
+    }
+
+    function nextLevel() {
+        if (currentLevel < 25) {
+            currentLevel++;
+            document.getElementById('levelTitle').innerText = "Mission Control: Level " + currentLevel;
+            document.getElementById('progress').innerText = "Python Level " + currentLevel + " of 25";
+            document.getElementById('instructions').innerHTML = levels[currentLevel-1].task;
+            document.getElementById('nextBtn').style.display = "none";
+            document.getElementById('console').innerHTML = "Initializing Level " + currentLevel + "...";
+        } else {
+            alert("Commander, you've reached the edge of the galaxy! Challenge Complete!");
+        }
+    }
+</script>
+</body>
+</html>
