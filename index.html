@@ -2,29 +2,30 @@
 <html>
 <head>
     <title>Python Space Commander</title>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/brython@3.10.5/brython.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/brython@3.10.5/brython_stdlib.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/brython@3.12.0/brython.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/brython@3.12.0/brython_stdlib.js"></script>
     
     <style>
         body { font-family: 'Courier New', Courier, monospace; background: #0b0d17; color: #cfd8dc; display: flex; flex-direction: column; height: 100vh; margin: 0; }
-        header { background: #1a237e; color: #fff; padding: 15px; border-bottom: 2px solid #3949ab; display: flex; justify-content: space-between; }
+        header { background: #1a237e; color: #fff; padding: 15px; border-bottom: 2px solid #3949ab; display: flex; justify-content: space-between; align-items: center; }
         .container { display: flex; flex: 1; overflow: hidden; }
         .editor-side, .output-side { flex: 1; display: flex; flex-direction: column; padding: 20px; }
-        textarea { flex: 1; font-family: 'Consolas', monospace; font-size: 16px; padding: 15px; border: 2px solid #3949ab; border-radius: 4px; background: #1c1c1c; color: #00ff41; resize: none; }
+        textarea { flex: 1; font-family: 'Consolas', monospace; font-size: 16px; padding: 15px; border: 2px solid #3949ab; border-radius: 4px; background: #1c1c1c; color: #00ff41; resize: none; outline: none; }
         #console { flex: 1; background: #000; color: #00ff41; font-family: 'Consolas', monospace; padding: 15px; overflow-y: auto; border: 1px solid #333; white-space: pre-wrap; }
         .controls { display: flex; gap: 10px; margin-top: 10px; }
-        button { flex: 1; padding: 15px; font-size: 16px; cursor: pointer; border: none; color: white; font-weight: bold; }
+        button { flex: 1; padding: 15px; font-size: 16px; cursor: pointer; border: none; color: white; font-weight: bold; border-radius: 4px; }
         #runBtn { background: #1b5e20; }
+        #runBtn:hover { background: #2e7d32; }
         #nextBtn { background: #0277bd; display: none; }
         .level-hint { background: #263238; padding: 15px; border-left: 5px solid #0277bd; margin-bottom: 15px; color: #eceff1; }
-        code { background: #37474f; padding: 2px 5px; color: #ffab40; }
+        code { background: #37474f; padding: 2px 5px; color: #ffab40; border-radius: 3px; }
     </style>
 </head>
 
 <body onload="brython()">
 
 <header>
-    <h1 id="levelTitle">Mission Control: Level 1</h1>
+    <h1 id="levelTitle" style="margin:0; font-size: 24px;">Mission Control: Level 1</h1>
     <div id="progress">Python Level 1 of 25</div>
 </header>
 
@@ -36,7 +37,7 @@
         </div>
         <textarea id="codeEditor" spellcheck="false" placeholder="# Write your Python code here..."></textarea>
         <div class="controls">
-            <button id="runBtn" onclick="runPython()">Initiate Launch (Run)</button>
+            <button id="runBtn">Initiate Launch (Run)</button>
             <button id="nextBtn" onclick="nextLevel()">Next Level →</button>
         </div>
     </div>
@@ -47,27 +48,33 @@
     </div>
 </div>
 
-<script type="text/python" id="python_runner">
-from browser import document, window, alert
-import sys
+<script type="text/python">
+from browser import document, window, sys
 
 def run_it(ev):
+    # Clear console
     document["console"].text = ""
     code = document["codeEditor"].value
     
-    # Redirect Python print() to our console div
+    # Custom output class to catch print() statements
     class MyOutput:
         def write(self, data):
-            document["console"].text += data
+            document["console"].text += str(data)
+        def flush(self):
+            pass
     
     sys.stdout = MyOutput()
+    sys.stderr = MyOutput()
     
     try:
-        exec(code)
+        # We use a clean dictionary for locals so variables don't persist between runs
+        exec(code, {})
+        # Call the JS function to check progress
         window.check_progress(code)
     except Exception as e:
         print(f"PYTHON ERROR: {e}")
 
+# Bind the button to the function
 document["runBtn"].bind("click", run_it)
 </script>
 
@@ -103,20 +110,22 @@ document["runBtn"].bind("click", run_it)
 
     window.check_progress = function(code) {
         let requirement = levels[currentLevel-1].check;
-        if (code.includes(requirement)) {
-            document.getElementById('console').innerHTML += "\n✅ [MISSION CLEAR] Requirement Met.";
+        // Simple case-insensitive check
+        if (code.toLowerCase().includes(requirement.toLowerCase())) {
+            document.getElementById('console').innerHTML += "\n\n✅ [MISSION CLEAR] Requirement Met.";
             document.getElementById('nextBtn').style.display = "block";
         }
     }
 
     function nextLevel() {
-        if (currentLevel < 25) {
+        if (currentLevel < levels.length) {
             currentLevel++;
             document.getElementById('levelTitle').innerText = "Mission Control: Level " + currentLevel;
             document.getElementById('progress').innerText = "Python Level " + currentLevel + " of 25";
             document.getElementById('instructions').innerHTML = levels[currentLevel-1].task;
             document.getElementById('nextBtn').style.display = "none";
             document.getElementById('console').innerHTML = "Initializing Level " + currentLevel + "...";
+            document.getElementById('codeEditor').value = ""; // Clear editor for next level
         } else {
             alert("Commander, you've reached the edge of the galaxy! Challenge Complete!");
         }
